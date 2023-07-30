@@ -1,15 +1,24 @@
 use zellij_tile::prelude::*;
 
+use zellaunch::worker::TaskDiscoveryWorker;
+
 #[derive(Default)]
 pub struct State {
     input: String,
+    options: Vec<String>,
 }
 
 register_plugin!(State);
+register_worker!(
+    TaskDiscoveryWorker,
+    task_discovery_worker,
+    TASK_DISCOVERY_WORKER
+);
 
 impl ZellijPlugin for State {
     fn load(&mut self) {
-        subscribe(&[EventType::Key, EventType::Timer]);
+        subscribe(&[EventType::Key, EventType::CustomMessage]);
+        post_message_to("task_discovery", "init", "");
     }
 
     fn update(&mut self, event: Event) -> bool {
@@ -56,11 +65,19 @@ impl ZellijPlugin for State {
                     _ => false,
                 }
             }
+            Event::CustomMessage(_m, p) => {
+                self.options = serde_json::from_str(&p).unwrap();
+                eprintln!("Got options: {:?}", self.options);
+                true
+            }
             _ => false,
         }
     }
 
     fn render(&mut self, _rows: usize, _cols: usize) {
+        for opt in &self.options {
+            println!("{}", opt);
+        }
         println!("Task:\n{}", self.input);
     }
 }
