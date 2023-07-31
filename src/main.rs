@@ -1,11 +1,11 @@
 use zellij_tile::prelude::*;
 
-use zellaunch::worker::TaskDiscoveryWorker;
+use zellaunch::worker::{TaskDiscoveryWorker, TaskOption};
 
 #[derive(Default)]
 pub struct State {
     input: String,
-    options: Vec<String>,
+    options: Vec<TaskOption>,
 }
 
 register_plugin!(State);
