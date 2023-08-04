@@ -1,15 +1,9 @@
 use nom::{
     branch::alt,
-    bytes::complete::{
-        tag, take_till, take_till1, take_until, take_until1, take_while, take_while1,
-    },
-    character::{
-        complete::{anychar, digit1, multispace0, multispace1, one_of},
-        is_space,
-    },
-    combinator::{map, opt, rest},
+    bytes::complete::{tag, take_till1, take_until},
+    character::complete::{digit1, multispace0, multispace1},
     multi::many0,
-    sequence::{delimited, pair, preceded, terminated},
+    sequence::{delimited, preceded},
     IResult,
 };
 
@@ -20,9 +14,38 @@ pub struct ParsedTask<'a> {
     pub args: Vec<&'a str>,
 }
 
-//TODO: fn to parse input
-// `digit1` is a function that parses one or more digits
-//
+pub struct InputIterator<'a> {
+    input: &'a str,
+}
+
+impl<'a> InputIterator<'a> {
+    pub fn new(input: &'a str) -> Self {
+        Self { input }
+    }
+}
+
+impl<'a> Iterator for InputIterator<'a> {
+    type Item = ParsedTask<'a>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.input = self.input.trim_start_matches(|c| "; \t".contains(c));
+        if self.input.is_empty() {
+            return None;
+        }
+        match parse_item(self.input) {
+            Ok((input, parsed)) => {
+                self.input = input;
+                Some(parsed)
+            }
+            // If error, skip to next item
+            Err(_) => {
+                self.input = self.input.trim_start_matches(|c| c != ';');
+                self.next()
+            }
+        }
+    }
+}
+
 fn parse_item(input: &str) -> IResult<&str, ParsedTask> {
     let index: Option<usize>;
     let command: Option<&str>;
@@ -119,5 +142,29 @@ mod test {
         let (input, parsed) = parse_item("echo 'hello world';3").unwrap();
         assert_eq!(input, ";3");
         assert_eq!(parsed, expected);
+    }
+
+    #[test]
+    fn test_collecting_tasks() {
+        let expected = vec![
+            ParsedTask {
+                index: Some(7),
+                command: None,
+                args: vec![],
+            },
+            ParsedTask {
+                index: Some(4),
+                command: None,
+                args: vec!["staging"],
+            },
+            ParsedTask {
+                index: None,
+                command: Some("echo"),
+                args: vec!["hello; world"],
+            },
+        ];
+        let collected: Vec<ParsedTask<'_>> =
+            InputIterator::new("7; 4 staging;echo 'hello; world'").collect();
+        assert_eq!(collected, expected);
     }
 }
