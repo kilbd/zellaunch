@@ -44,8 +44,7 @@ impl ZellijPlugin for State {
                         // Not sure why <Enter> isn't part of enum, but means
                         // we need to check for char here.
                         if c == '\n' {
-                            let args = self.input.split(" ").collect::<Vec<&str>>();
-                            open_command_pane(args[0], args[1..].to_vec());
+                            launch_task(&self.input);
                             self.input.clear();
                             hide_self();
                             return true;
@@ -75,9 +74,16 @@ impl ZellijPlugin for State {
     }
 
     fn render(&mut self, _rows: usize, _cols: usize) {
-        for opt in &self.options {
-            println!("{}", opt);
+        for (index, opt) in self.options.iter().enumerate() {
+            println!("{} - {}", index + 1, opt);
         }
         println!("Task:\n{}", self.input);
     }
+}
+
+fn launch_task(input: &String) {
+    //TODO: Parse input to determine if running discovered task
+    //or arbitrary command
+    let args = input.split(" ").collect::<Vec<&str>>();
+    open_command_pane(args[0], args[1..].to_vec());
 }
