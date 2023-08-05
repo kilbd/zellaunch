@@ -17,8 +17,10 @@ pub enum TaskRunner {
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct TaskOption {
-    pub task: String,
+    pub args: Vec<String>,
+    pub command: String,
     pub runner: TaskRunner,
+    pub task: String,
 }
 
 impl<'de> ZellijWorker<'de> for TaskDiscoveryWorker {
@@ -44,9 +46,11 @@ impl<'de> ZellijWorker<'de> for TaskDiscoveryWorker {
                     // Check first line of file for shebang
                     let mut lines = BufReader::new(file).lines();
                     if lines.next().unwrap().unwrap().starts_with("#!") {
+                        let rel_path = entry.path().to_str().unwrap()[6..].to_string();
                         options.push(TaskOption {
-                            task: entry.path().to_str().unwrap()[6..].to_string(),
-                            runner: TaskRunner::Shell,
+                            command: format!("./{}", &rel_path),
+                            task: rel_path,
+                            ..Default::default()
                         });
                     }
                 }
@@ -67,6 +71,17 @@ impl Display for TaskOption {
     }
 }
 
+impl Default for TaskOption {
+    fn default() -> Self {
+        Self {
+            args: vec![],
+            command: "".to_string(),
+            runner: TaskRunner::Shell,
+            task: "".to_string(),
+        }
+    }
+}
+
 #[derive(Deserialize)]
 struct PackageJson {
     scripts: HashMap<String, String>,
@@ -79,8 +94,10 @@ fn get_npm_tasks(path: &Path) -> Vec<TaskOption> {
         if let Ok(json) = serde_json::from_str::<PackageJson>(&contents) {
             for task in json.scripts.keys() {
                 options.push(TaskOption {
-                    task: task.to_string(),
+                    command: "npm".to_string(),
                     runner: TaskRunner::Npm,
+                    task: task.to_string(),
+                    args: vec!["run".to_string(), task.to_string()],
                 });
             }
         }
