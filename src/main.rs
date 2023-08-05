@@ -14,7 +14,7 @@ pub struct State {
 }
 
 pub struct Input {
-    input: String,
+    text: String,
     cursor_position: usize,
 }
 
@@ -54,7 +54,7 @@ impl ZellijPlugin for State {
                         // Not sure why <Enter> isn't part of enum, but means
                         // we need to check for char here.
                         if c == '\n' {
-                            launch_task(&self.input);
+                            self.launch_tasks();
                             self.input.clear();
                             hide_self();
                             return true;
@@ -91,12 +91,31 @@ impl ZellijPlugin for State {
     }
 }
 
+impl State {
+    fn launch_tasks(&self) {
+        self.input
+            .iter()
+            .map(|mut t| {
+                if let Some(i) = t.index {
+                    let chosen = self.options.get(i - 1).unwrap();
+                    t.command = Some(&chosen.command);
+                    let mut args: Vec<&str> = chosen.args.iter().map(String::as_str).collect();
+                    args.extend(t.args);
+                    t.args = args;
+                }
+                t
+            })
+            .for_each(|t| open_command_pane(t.command.unwrap(), t.args));
+    }
+}
+
 impl Input {
     pub fn push(&mut self, c: char) {
-        if self.cursor_position == self.input.len() {
-            self.input.push(c);
+        // `push` should be more efficient than `insert` when appending
+        if self.cursor_position == self.text.len() {
+            self.text.push(c);
         } else {
-            self.input.insert(self.cursor_position, c);
+            self.text.insert(self.cursor_position, c);
         }
         self.cursor_position += 1;
     }
@@ -104,33 +123,33 @@ impl Input {
     pub fn pop(&mut self) -> Option<char> {
         if self.cursor_position > 0 {
             self.cursor_position -= 1;
-            Some(self.input.remove(self.cursor_position))
+            Some(self.text.remove(self.cursor_position))
         } else {
             None
         }
     }
 
     pub fn clear(&mut self) {
-        self.input.clear();
+        self.text.clear();
         self.cursor_position = 0;
     }
 
     pub fn move_cursor(&mut self, delta: isize) {
         let new_position = (self.cursor_position as isize) + delta;
-        if new_position >= 0 && new_position <= (self.input.len() as isize) {
+        if new_position >= 0 && new_position <= (self.text.len() as isize) {
             self.cursor_position = new_position as usize;
         }
     }
 
     pub fn iter(&self) -> InputIterator {
-        InputIterator::new(self.input.as_str())
+        InputIterator::new(self.text.as_str())
     }
 }
 
 impl Default for Input {
     fn default() -> Self {
         Self {
-            input: String::new(),
+            text: String::new(),
             cursor_position: 0,
         }
     }
@@ -138,13 +157,6 @@ impl Default for Input {
 
 impl Display for Input {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", &self.input)
+        write!(f, "{}", &self.text)
     }
-}
-
-fn launch_task(input: &String) {
-    //TODO: Parse input to determine if running discovered task
-    //or arbitrary command
-    let args = input.split(" ").collect::<Vec<&str>>();
-    open_command_pane(args[0], args[1..].to_vec());
 }
