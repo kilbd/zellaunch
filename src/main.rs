@@ -1,11 +1,21 @@
+use std::fmt::Display;
+
 use zellij_tile::prelude::*;
 
-use zellaunch::worker::{TaskDiscoveryWorker, TaskOption};
+use zellaunch::{
+    parser::InputIterator,
+    worker::{TaskDiscoveryWorker, TaskOption},
+};
 
 #[derive(Default)]
 pub struct State {
-    input: String,
+    input: Input,
     options: Vec<TaskOption>,
+}
+
+pub struct Input {
+    input: String,
+    cursor_position: usize,
 }
 
 register_plugin!(State);
@@ -78,6 +88,57 @@ impl ZellijPlugin for State {
             println!("{} - {}", index + 1, opt);
         }
         println!("Task:\n{}", self.input);
+    }
+}
+
+impl Input {
+    pub fn push(&mut self, c: char) {
+        if self.cursor_position == self.input.len() {
+            self.input.push(c);
+        } else {
+            self.input.insert(self.cursor_position, c);
+        }
+        self.cursor_position += 1;
+    }
+
+    pub fn pop(&mut self) -> Option<char> {
+        if self.cursor_position > 0 {
+            self.cursor_position -= 1;
+            Some(self.input.remove(self.cursor_position))
+        } else {
+            None
+        }
+    }
+
+    pub fn clear(&mut self) {
+        self.input.clear();
+        self.cursor_position = 0;
+    }
+
+    pub fn move_cursor(&mut self, delta: isize) {
+        let new_position = (self.cursor_position as isize) + delta;
+        if new_position >= 0 && new_position <= (self.input.len() as isize) {
+            self.cursor_position = new_position as usize;
+        }
+    }
+
+    pub fn iter(&self) -> InputIterator {
+        InputIterator::new(self.input.as_str())
+    }
+}
+
+impl Default for Input {
+    fn default() -> Self {
+        Self {
+            input: String::new(),
+            cursor_position: 0,
+        }
+    }
+}
+
+impl Display for Input {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", &self.input)
     }
 }
 
