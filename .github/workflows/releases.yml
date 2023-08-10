@@ -11,7 +11,7 @@ jobs:
     steps:
       - name: Set up Rust
         run: |
-          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+          rustup update
           rustup target add wasm32-wasi
       - name: Checkout code
         uses: actions/checkout@v3
