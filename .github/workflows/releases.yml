@@ -12,9 +12,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
       - name: Set up Rust
-        uses: actions/setup-rust@v1
+        uses: actions-rs/toolchain@v1
         with:
-          rust-version: stable
+          toolchain: stable
+          target: wasm32-wasi
       - name: Build wasm
         run: cargo build --release
       - name: Save tag data
