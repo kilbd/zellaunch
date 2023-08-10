@@ -18,8 +18,8 @@ jobs:
       - name: Build wasm
         run: cargo build --release
       - name: Save tag data
-        id: tag_data
         run: |
+          echo "Git ref: ${{ github.ref }}"
           echo "RELEASE_HEADER=$(git for-each-ref ${{ github.ref }} --format='%(contents:subject)')" >> "$GITHUB_ENV"
           echo "RELEASE_BODY=$(git for-each-ref ${{ github.ref }} --format='%(contents:body)')" >> "$GITHUB_ENV"
       - name: Create release
