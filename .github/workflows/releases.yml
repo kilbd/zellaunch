@@ -1,0 +1,32 @@
+name: Create Release
+
+on:
+  push
+  #  push:
+  #    tags:
+  #      - v*
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Set up Rust
+        uses: actions/setup-rust@v1
+        with:
+          rust-version: stable
+      - name: Build wasm
+        run: cargo build --release
+      - name: Save tag data
+        id: tag_data
+        run: echo "::set-output name=header::$(git show --format=%B --quiet ${{ github.ref }})"
+      - name: Create release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          release_name: Release ${{ steps.tag_data.outputs.header }}
+          body: ${{ steps.tag_data.outputs.body }}
+          draft: false
+          prerelease: false
