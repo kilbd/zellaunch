@@ -1,10 +1,9 @@
 name: Create Release
 
 on:
-  push
-  #  push:
-  #    tags:
-  #      - v*
+  push:
+    tags:
+      - v*
 
 jobs:
   release:
@@ -20,13 +19,17 @@ jobs:
         run: cargo build --release
       - name: Save tag data
         id: tag_data
-        run: echo "::set-output name=header::$(git show --format=%B --quiet ${{ github.ref }})"
+        run: |
+          echo "::set-output name=header::$(git for-each-ref ${{ github.ref }} --format='%(contents:subject)')"
+          echo "::set-output name=body::$(git for-each-ref ${{ github.ref }} --format='%(contents:body)')"
       - name: Create release
-        uses: actions/create-release@v1
+        uses: softprops/action-gh-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          release_name: Release ${{ steps.tag_data.outputs.header }}
+          name: Release ${{ steps.tag_data.outputs.header }}
+          # consider body_path for changelog document
           body: ${{ steps.tag_data.outputs.body }}
+          files: target/wasm32-wasi/release/zellaunch.wasm
           draft: false
           prerelease: false
