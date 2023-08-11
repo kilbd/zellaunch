@@ -20,6 +20,7 @@ jobs:
       - name: Save tag data
         run: |
           echo "Git ref: ${{ github.ref }}"
+          echo "contents: $(git for-each-ref ${{ github.ref }} --format='%(contents)')"
           echo "header: $(git for-each-ref ${{ github.ref }} --format='%(contents:subject)')"
           echo "body: $(git for-each-ref ${{ github.ref }} --format='%(contents:body)')"
           echo "RELEASE_HEADER=$(git for-each-ref ${{ github.ref }} --format='%(contents:subject)')" >> "$GITHUB_ENV"
