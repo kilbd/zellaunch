@@ -20,11 +20,9 @@ jobs:
       - name: Save tag data
         run: |
           echo "Git ref: ${{ github.ref }}"
-          echo "contents: $(git for-each-ref ${{ github.ref }} --format='%(contents)')"
-          echo "header: $(git for-each-ref ${{ github.ref }} --format='%(contents:subject)')"
-          echo "body: $(git for-each-ref ${{ github.ref }} --format='%(contents:body)')"
-          echo "RELEASE_HEADER=$(git for-each-ref ${{ github.ref }} --format='%(contents:subject)')" >> "$GITHUB_ENV"
-          echo "RELEASE_BODY=$(git for-each-ref ${{ github.ref }} --format='%(contents:body)')" >> "$GITHUB_ENV"
+          CONTENTS="$(git for-each-ref ${{ github.ref }} --format='%(contents)')"
+          echo "RELEASE_HEADER=$(sed '3q;d' "$CONTENTS")" >> "$GITHUB_ENV"
+          echo "RELEASE_BODY=$(tail -n +5 "$CONTENTS")" >> "$GITHUB_ENV"
       - name: Create release
         uses: softprops/action-gh-release@v1
         with:
