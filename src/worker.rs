@@ -45,7 +45,10 @@ impl<'de> ZellijWorker<'de> for TaskDiscoveryWorker {
                     };
                     // Check first line of file for shebang
                     let mut lines = BufReader::new(file).lines();
-                    if lines.next().unwrap().unwrap().starts_with("#!") {
+                    if lines
+                        .next()
+                        .is_some_and(|r| r.is_ok_and(|l| l.starts_with("#!")))
+                    {
                         let rel_path = entry.path().to_str().unwrap()[6..].to_string();
                         options.push(TaskOption {
                             command: format!("./{}", &rel_path),
