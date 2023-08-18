@@ -23,15 +23,14 @@ jobs:
         run: cargo build --release
       - name: Save tag data
         run: |
-          echo "Git ref: ${{ github.ref }}"
           echo "RELEASE_HEADER=$(git tag -l --format='%(contents:subject)' ${{ github.ref }})" >> "$GITHUB_ENV"
-          echo "RELEASE_BODY=$(git tag -l --format='%(contents:body)' ${{ github.ref}})" >> "$GITHUB_ENV"
+          echo "$(git tag -l --format='%(contents:body)' ${{ github.ref}})" > RELEASE_NOTES.md
       - name: Create release
         uses: softprops/action-gh-release@v1
         with:
           name: Release ${{ env.RELEASE_HEADER }}
           # consider body_path for changelog document
-          body: ${{ env.RELEASE_BODY }}
+          body_path: RELEASE_NOTES.md
           files: target/wasm32-wasi/release/zellaunch.wasm
           draft: false
           prerelease: false
